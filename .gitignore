@@ -1,0 +1,33 @@
+# Runtime configuration and secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.venv/
+venv/
+
+# Node / frontend builds
+node_modules/
+.next/
+dist/
+coverage/
+tmp/
+
+# Local services and evidence files
+.data/
+data/uploads/
+data/derived/
+data/reports/
+data/*.sqlite3
+!data/README.md
+
+# Editors and operating systems
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

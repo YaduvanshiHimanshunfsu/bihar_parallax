@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#071522" />
+    <title>Parallax — Evidence Integrity Workbench</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Primary navigation">
+        <a class="brand" href="#dashboard" aria-label="Parallax home">
+          <span class="brand-mark" aria-hidden="true"><span></span><span></span></span>
+          <span><strong>PARALLAX</strong><small>Evidence Integrity</small></span>
+        </a>
+
+        <nav class="main-nav">
+          <button class="nav-item active" type="button" data-view="dashboard" aria-current="page"><span>01</span>Overview</button>
+          <button class="nav-item" type="button" data-view="cases"><span>02</span>Cases <b>04</b></button>
+          <button class="nav-item" type="button" data-view="evidence"><span>03</span>Evidence vault</button>
+          <button class="nav-item" type="button" data-view="reports"><span>04</span>Reports</button>
+        </nav>
+
+        <div class="sidebar-section">
+          <p class="eyebrow">Analysis modules</p>
+          <button class="module-link" type="button" data-module="Image"><i class="module-dot image"></i>Image &amp; metadata</button>
+          <button class="module-link" type="button" data-module="Video"><i class="module-dot video"></i>Video &amp; CCTV</button>
+          <button class="module-link" type="button" data-module="Audio"><i class="module-dot audio"></i>Audio &amp; voice</button>
+          <button class="module-link" type="button" data-module="Provenance"><i class="module-dot provenance"></i>Provenance</button>
+        </div>
+
+        <div class="sidebar-footer">
+          <div class="analyst-avatar" aria-hidden="true">AK</div>
+          <div><strong>A. Kumar</strong><small>Forensic analyst</small></div>
+          <button class="more-button" type="button" aria-label="Account options">•••</button>
+        </div>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <button class="menu-button" type="button" aria-label="Open navigation">☰</button>
+          <label class="search-box">
+            <span>⌕</span>
+            <input type="search" placeholder="Search case, evidence ID, hash…" aria-label="Search cases and evidence" />
+          </label>
+          <div class="topbar-actions">
+            <button class="icon-button" type="button" aria-label="Notifications"><span class="notification-dot"></span>◌</button>
+            <button class="new-analysis-button" id="openUpload" type="button">+ New analysis</button>
+          </div>
+        </header>
+
+        <section class="page-content" id="dashboardView">
+          <div class="page-title-row">
+            <div>
+              <p class="eyebrow">Investigation workspace</p>
+              <h1>Good morning, Analyst.</h1>
+              <p class="page-subtitle">Review evidence integrity signals and prioritise what needs human attention.</p>
+            </div>
+            <div class="clock-card">
+              <span class="green-dot"></span>
+              <div><strong>Secure workspace</strong><small>All audit logs active</small></div>
+            </div>
+          </div>
+
+          <section class="metric-grid" aria-label="Case summary">
+            <article class="metric-card">
+              <span class="metric-label">Active cases</span>
+              <strong class="metric-value" id="activeCasesCount">0</strong>
+              <span class="metric-context positive">↑ 4 this week</span>
+            </article>
+            <article class="metric-card">
+              <span class="metric-label">Evidence analysed</span>
+              <strong class="metric-value" id="evidenceAnalysedCount">0</strong>
+              <span class="metric-context">Last 30 days</span>
+            </article>
+            <article class="metric-card warning-card">
+              <span class="metric-label">Needs expert review</span>
+              <strong class="metric-value" id="reviewCount">0</strong>
+              <span class="metric-context warning">3 newly flagged</span>
+            </article>
+            <article class="metric-card">
+              <span class="metric-label">Hash record coverage</span>
+              <strong class="metric-value" id="custodyIntegrityCount">100%</strong>
+              <span class="metric-context positive">Verify originals on demand</span>
+            </article>
+          </section>
+
+          <section class="dashboard-grid">
+            <article class="panel case-queue-panel">
+              <div class="panel-heading">
+                <div><p class="eyebrow">Priority queue</p><h2>Cases requiring attention</h2></div>
+                <button class="text-button" type="button" data-view="cases">View all cases →</button>
+              </div>
+              <div class="case-table-wrap">
+                <table class="case-table">
+                  <thead><tr><th>Case</th><th>Evidence</th><th>Integrity status</th><th>Updated</th><th></th></tr></thead>
+                  <tbody id="caseQueue">
+                    <tr>
+                      <td><strong>CYB-2026-1048</strong><small>Online fraud evidence</small></td>
+                      <td><span class="file-icon image-file">IMG</span>Screenshot_021.jpg</td>
+                      <td><span class="status-pill concern">High integrity concern</span></td>
+                      <td>12 min ago</td><td><button class="row-button" type="button" data-case="CYB-2026-1048">Review →</button></td>
+                    </tr>
+                    <tr>
+                      <td><strong>CYB-2026-1043</strong><small>CCTV verification</small></td>
+                      <td><span class="file-icon video-file">VID</span>lane_04_export.mp4</td>
+                      <td><span class="status-pill review">Needs expert review</span></td>
+                      <td>48 min ago</td><td><button class="row-button" type="button" data-case="CYB-2026-1043">Review →</button></td>
+                    </tr>
+                    <tr>
+                      <td><strong>CYB-2026-1039</strong><small>Threat-call recording</small></td>
+                      <td><span class="file-icon audio-file">AUD</span>call_recording.wav</td>
+                      <td><span class="status-pill neutral">Inconclusive</span></td>
+                      <td>2 hr ago</td><td><button class="row-button" type="button" data-case="CYB-2026-1039">Review →</button></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </article>
+
+            <article class="panel signal-panel">
+              <div class="panel-heading compact"><div><p class="eyebrow">Signal monitor</p><h2>Integrity findings</h2></div><button class="period-button" type="button">7 days⌄</button></div>
+              <div class="signal-chart" aria-label="Integrity findings trend over seven days">
+                <div class="chart-axis"><span>12</span><span>8</span><span>4</span><span>0</span></div>
+                <div class="chart-area">
+                  <span class="grid-line line-one"></span><span class="grid-line line-two"></span><span class="grid-line line-three"></span><span class="grid-line line-four"></span>
+                  <svg viewBox="0 0 500 195" preserveAspectRatio="none" role="img" aria-label="Line chart with increased high integrity concerns on Friday">
+                    <path class="area-fill" d="M0,147 L83,130 L166,144 L250,105 L333,121 L416,42 L500,91 L500,195 L0,195 Z"></path>
+                    <path class="trend-line" d="M0,147 L83,130 L166,144 L250,105 L333,121 L416,42 L500,91"></path>
+                    <circle cx="416" cy="42" r="5"></circle>
+                  </svg>
+                  <div class="chart-callout"><strong>11</strong><span>Friday peak</span></div>
+                </div>
+                <div class="chart-days"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div>
+              </div>
+              <div class="chart-legend"><span><i class="legend-line"></i>Integrity concern</span><span class="muted-text">+18% vs. previous week</span></div>
+            </article>
+
+            <article class="panel active-case-panel" id="activeCasePanel">
+              <div class="panel-heading compact"><div><p class="eyebrow">Active investigation</p><h2>No active case</h2></div><span class="status-pill neutral">Ready</span></div>
+              <p class="muted-copy panel-empty-copy">Create a secure case record to see its live evidence summary and integrity signals here.</p>
+            </article>
+
+            <article class="panel process-panel">
+              <div class="panel-heading compact"><div><p class="eyebrow">Evidence lifecycle</p><h2>Traceable by design</h2></div></div>
+              <ol class="process-list">
+                <li class="complete"><span>01</span><div><strong>Secure intake</strong><small>Hash and custody record created</small></div><b>✓</b></li>
+                <li class="complete"><span>02</span><div><strong>Analysis</strong><small>Image, metadata and provenance checks</small></div><b>✓</b></li>
+                <li class="current"><span>03</span><div><strong>Human review</strong><small>Analyst decision required</small></div><b>→</b></li>
+                <li><span>04</span><div><strong>Integrity dossier</strong><small>Report pending reviewer sign-off</small></div><b>·</b></li>
+              </ol>
+            </article>
+          </section>
+        </section>
+
+        <section class="page-content hidden-view" id="alternateView" aria-live="polite">
+          <div class="page-title-row"><div><p class="eyebrow" id="alternateEyebrow">Case management</p><h1 id="alternateTitle">All investigations</h1><p class="page-subtitle" id="alternateSubtitle">Open a case to review evidence, findings, and custody records.</p></div><button class="new-analysis-button" type="button" id="alternateAction">+ New case</button></div>
+          <article class="panel empty-panel" id="alternatePanel"><div class="empty-orbit"><span></span><span></span><span></span></div><h2 id="alternatePanelTitle">Choose an investigation</h2><p id="alternatePanelText">This workspace will surface the selected case, its evidence timeline, and explainable integrity findings.</p><button class="full-review-button" type="button" id="returnDashboard">Return to overview <span>→</span></button></article>
+        </section>
+      </main>
+    </div>
+
+    <div class="modal-backdrop" id="uploadModal" hidden>
+      <section class="upload-modal" role="dialog" aria-modal="true" aria-labelledby="uploadTitle">
+        <button class="modal-close" type="button" id="closeUpload" aria-label="Close">×</button>
+        <p class="eyebrow">New forensic analysis</p><h2 id="uploadTitle">Create a secure evidence record</h2>
+        <p>Start a case before submitting a file. Parallax will create an evidence ID and SHA-256 hash before any analysis begins.</p>
+        <label class="form-label">Case reference<input class="form-input" id="caseReference" value="CYB-2026-1049" aria-label="Case reference" /></label>
+        <label class="form-label">Case title<input class="form-input" id="caseTitle" value="Digital evidence intake" aria-label="Case title" /></label>
+        <label class="drop-zone" for="evidenceUpload"><input id="evidenceUpload" type="file" accept="image/*,audio/*,video/*" hidden /><strong>Drop evidence here or choose a file</strong><span>Images, audio, video and CCTV exports · maximum 250 MB</span></label>
+        <button class="new-analysis-button modal-submit" type="button" id="startAnalysis">Create record and analyse</button>
+      </section>
+    </div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="app.js"></script>
+  </body>
+</html>
