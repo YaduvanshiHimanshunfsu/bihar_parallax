@@ -5,7 +5,7 @@ from fastapi.responses import FileResponse
 
 from app.evidence.storage import EvidenceStorageError
 from app.evidence.validation import EvidenceValidationError
-from app.schemas.contracts import AnalysisSummary, AssessmentSummary, AuditChainVerification, CaseCreate, CaseDetail, CaseSummary, EvidenceDetail, EvidenceSummary, IntegrityVerification, ReportSummary
+from app.schemas.contracts import AnalystNote, AnalystNoteCreate, AnalysisSummary, AssessmentSummary, AuditChainVerification, CaseCreate, CaseDetail, CaseSummary, EvidenceDetail, EvidenceSummary, IntegrityVerification, ReportSummary
 from app.services.cases import CaseNotFoundError, CaseService, DuplicateCaseError
 
 router = APIRouter(prefix="/cases", tags=["cases"])
@@ -153,6 +153,19 @@ def assess_case(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found.") from exc
 
 
+@router.post("/{case_id}/notes", response_model=AnalystNote, status_code=status.HTTP_201_CREATED)
+def add_analyst_note(
+    case_id: str,
+    payload: AnalystNoteCreate,
+    request: Request,
+    actor: str = Header(default="demo-analyst", alias="X-Analyst-ID"),
+) -> AnalystNote:
+    try:
+        return case_service(request).add_analyst_note(case_id, payload, actor)
+    except CaseNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found.") from exc
+
+
 @router.post("/{case_id}/reports", response_model=list[ReportSummary], status_code=status.HTTP_201_CREATED)
 def create_report(
     case_id: str,
@@ -175,7 +188,7 @@ def download_report(report_id: str, request: Request) -> FileResponse:
             raise FileNotFoundError
         media_type = {"json": "application/json", "html": "text/html", "pdf": "application/pdf"}[report_format]
         return FileResponse(path, filename=path.name, media_type=media_type)
-    except (CaseNotFoundError, FileNotFoundError, ValueError):
+    except (CaseNotFoundError, FileNotFoundError, ValueError) as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Generated report not found.") from exc
 
 
@@ -198,5 +211,5 @@ def download_artifact(artifact_id: str, request: Request) -> FileResponse:
         if not path.is_file():
             raise FileNotFoundError
         return FileResponse(path, filename=path.name, media_type="image/png")
-    except (CaseNotFoundError, FileNotFoundError, ValueError):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Derived artifact not found.")
+    except (CaseNotFoundError, FileNotFoundError, ValueError) as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Derived artifact not found.") from exc

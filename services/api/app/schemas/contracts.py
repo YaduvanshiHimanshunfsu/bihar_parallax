@@ -79,6 +79,19 @@ class AssessmentSummary(BaseModel):
     created_at: str
 
 
+class AnalystNoteCreate(BaseModel):
+    note: str = Field(min_length=3, max_length=4_000)
+    disposition: str | None = Field(default=None, max_length=120)
+
+
+class AnalystNote(BaseModel):
+    id: str
+    author: str
+    note: str
+    disposition: str | None
+    created_at: str
+
+
 class EvidenceDetail(EvidenceSummary):
     analyses: list[AnalysisSummary]
 
@@ -116,6 +129,7 @@ class CaseDetail(CaseSummary):
     audit_events: list[AuditEvent]
     reports: list[ReportSummary] = Field(default_factory=list)
     assessment: AssessmentSummary | None = None
+    notes: list[AnalystNote] = Field(default_factory=list)
 
 
 class DashboardSummary(BaseModel):

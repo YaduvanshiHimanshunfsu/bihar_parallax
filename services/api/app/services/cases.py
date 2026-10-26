@@ -11,6 +11,8 @@ from app.evidence.artifacts import StoredArtifact
 from app.reports.storage import StoredReport
 from app.schemas.contracts import (
     AnalysisSummary,
+    AnalystNote,
+    AnalystNoteCreate,
     AssessmentSignalSummary,
     AssessmentSummary,
     AuditEvent,
@@ -120,6 +122,9 @@ class CaseService:
                 "SELECT * FROM case_assessments WHERE case_id = ? ORDER BY created_at DESC LIMIT 1",
                 (case_id,),
             ).fetchone()
+            note_rows = connection.execute(
+                "SELECT * FROM analyst_notes WHERE case_id = ? ORDER BY created_at DESC", (case_id,)
+            ).fetchall()
         return CaseDetail(
             **summary.model_dump(),
             evidence=[
@@ -155,7 +160,38 @@ class CaseService:
                 if assessment_row
                 else None
             ),
+            notes=[
+                AnalystNote(
+                    id=row["id"], author=row["author"], note=row["note"],
+                    disposition=row["disposition"], created_at=row["created_at"],
+                )
+                for row in note_rows
+            ],
         )
+
+    def add_analyst_note(self, case_id: str, payload: AnalystNoteCreate, actor: str) -> AnalystNote:
+        self.get_case_summary(case_id)
+        note_id = str(uuid.uuid4())
+        created_at = utc_now()
+        note = payload.note.strip()
+        disposition = payload.disposition.strip() if payload.disposition else None
+        with self.database.connection() as connection:
+            connection.execute(
+                """
+                INSERT INTO analyst_notes(id, case_id, author, note, disposition, created_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (note_id, case_id, actor, note, disposition, created_at),
+            )
+            connection.execute("UPDATE cases SET updated_at = ? WHERE id = ?", (created_at, case_id))
+            self.database.add_audit_event(
+                connection,
+                event_type="case.analyst_note.recorded",
+                actor=actor,
+                case_id=case_id,
+                details={"note_id": note_id, "disposition": disposition, "note_length": len(note)},
+            )
+        return AnalystNote(id=note_id, author=actor, note=note, disposition=disposition, created_at=created_at)
 
     def add_evidence(self, case_id: str, stored: StoredEvidence, actor: str) -> EvidenceSummary:
         self.get_case_summary(case_id)

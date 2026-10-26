@@ -25,9 +25,16 @@ class Database:
 
     @contextmanager
     def connection(self) -> Iterator[sqlite3.Connection]:
-        connection = sqlite3.connect(self.path)
+        # WAL lets dashboard reads proceed while a short write transaction is
+        # committing. The small busy window prevents avoidable demo-time
+        # "database is locked" errors without pretending SQLite is a
+        # multi-node production database.
+        connection = sqlite3.connect(self.path, timeout=5.0)
         connection.row_factory = sqlite3.Row
         connection.execute("PRAGMA foreign_keys = ON")
+        connection.execute("PRAGMA busy_timeout = 5000")
+        connection.execute("PRAGMA journal_mode = WAL")
+        connection.execute("PRAGMA synchronous = NORMAL")
         try:
             yield connection
             connection.commit()
@@ -129,6 +136,15 @@ class Database:
                     created_at TEXT NOT NULL
                 );
 
+                CREATE TABLE IF NOT EXISTS analyst_notes (
+                    id TEXT PRIMARY KEY,
+                    case_id TEXT NOT NULL REFERENCES cases(id) ON DELETE RESTRICT,
+                    author TEXT NOT NULL,
+                    note TEXT NOT NULL,
+                    disposition TEXT,
+                    created_at TEXT NOT NULL
+                );
+
                 CREATE INDEX IF NOT EXISTS idx_evidence_case_id ON evidence_items(case_id);
                 CREATE INDEX IF NOT EXISTS idx_audit_case_id ON audit_events(case_id);
                 CREATE INDEX IF NOT EXISTS idx_audit_evidence_id ON audit_events(evidence_id);
@@ -136,6 +152,7 @@ class Database:
                 CREATE INDEX IF NOT EXISTS idx_findings_analysis_id ON findings(analysis_id);
                 CREATE INDEX IF NOT EXISTS idx_reports_case_id ON reports(case_id);
                 CREATE INDEX IF NOT EXISTS idx_assessments_case_id ON case_assessments(case_id, created_at DESC);
+                CREATE INDEX IF NOT EXISTS idx_notes_case_id ON analyst_notes(case_id, created_at DESC);
                 """
             )
             # SQLite's CREATE TABLE IF NOT EXISTS does not evolve existing local

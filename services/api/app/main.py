@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
@@ -31,7 +32,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(
         title="Parallax Evidence Integrity API",
         version="0.1.0",
-        description="Phase 1: immutable intake, evidence hashing, cases, and audit events.",
+        description="Evidence-first integrity analysis, custody verification, and human-review workflows.",
     )
     app.state.settings = active_settings
     app.state.case_service = CaseService(database)
@@ -44,9 +45,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.report_service = ReportService(app.state.case_service, report_store)
     app.state.integrity_verification_service = IntegrityVerificationService(app.state.case_service, store)
     app.state.assessment_service = AssessmentService(app.state.case_service)
+    configured_origins = [
+        origin.strip()
+        for origin in os.getenv("PARALLAX_CORS_ORIGINS", "http://127.0.0.1:8000,http://localhost:8000").split(",")
+        if origin.strip()
+    ]
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://127.0.0.1:8000", "http://localhost:8000"],
+        allow_origins=configured_origins,
         allow_credentials=False,
         allow_methods=["GET", "POST"],
         allow_headers=["Content-Type", "X-Analyst-ID"],
