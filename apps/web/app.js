@@ -1,3 +1,6 @@
+// Legacy dark-theme dashboard retained temporarily for source history only.
+// The Stitch-derived dynamic workbench below owns the rendered DOM.
+if (false) {
 const API_BASE = "/api/v1";
 const navButtons = document.querySelectorAll("[data-view]");
 const dashboardView = document.getElementById("dashboardView");
@@ -320,3 +323,4 @@ document.getElementById("evidenceUpload").addEventListener("change", (event) => 
 uploadModal.addEventListener("click", (event) => { if (event.target === uploadModal) closeUpload(); });
 document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !uploadModal.hidden) closeUpload(); });
 loadDashboard();
+}
