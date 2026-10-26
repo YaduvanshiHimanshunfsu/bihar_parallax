@@ -28,7 +28,7 @@ def version() -> dict[str, object]:
         "api_version": "0.2.0",
         "forensic_engine_version": "0.1.0",
         "modules": {
-            "image": ["EXIF metadata", "timestamp consistency", "JPEG ELA"],
+            "image": ["EXIF metadata", "timestamp consistency", "JPEG ELA", "ORB copy-move candidates"],
             "video": ["sampled frame sequence", "near duplicates", "transition leads"],
             "audio": ["WAV waveform", "spectrogram", "energy and clipping leads"],
             "custody": ["SHA-256 re-hash", "hash-chained audit verification"],

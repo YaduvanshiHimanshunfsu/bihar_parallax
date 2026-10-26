@@ -398,8 +398,8 @@ class CaseService:
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
-                    analysis_id, evidence_id, "image.metadata_ela", "0.1.0", "completed",
-                    json.dumps({"jpeg_recompression_quality": 90}, sort_keys=True), json.dumps(summary, sort_keys=True), now,
+                    analysis_id, evidence_id, "image.metadata_ela", "0.2.0", "completed",
+                    json.dumps({"jpeg_recompression_quality": 90, "copy_move_detector": "ORB", "copy_move_max_dimension": 1600}, sort_keys=True), json.dumps(summary, sort_keys=True), now,
                 ),
             )
             for finding in result.findings:
@@ -428,7 +428,7 @@ class CaseService:
             connection.execute("UPDATE cases SET updated_at = ? WHERE id = ?", (now, evidence["case_id"]))
             self.database.add_audit_event(
                 connection,
-                event_type="analysis.image_metadata_ela.completed",
+                event_type="analysis.image_integrity_review.completed",
                 actor=actor,
                 case_id=evidence["case_id"],
                 evidence_id=evidence_id,

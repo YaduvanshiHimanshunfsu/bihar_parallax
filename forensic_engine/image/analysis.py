@@ -6,6 +6,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+import cv2
+import numpy as np
 from PIL import ExifTags, Image, ImageChops, ImageEnhance, ImageStat, UnidentifiedImageError
 
 
@@ -185,6 +187,103 @@ def _ela(image: Image.Image) -> tuple[bytes, dict[str, float], ForensicFinding]:
     return output.getvalue(), metrics, finding
 
 
+def _copy_move_candidate_finding(image: Image.Image) -> ForensicFinding:
+    """Find internally repeated ORB features as a bounded copy-move review lead.
+
+    Repeated visual features are common in bricks, foliage, text and other regular
+    scene detail. This deliberately reports *candidate correspondences*, never a
+    conclusion that a copied region was pasted into the image.
+    """
+    grayscale = np.asarray(image.convert("L"))
+    height, width = grayscale.shape
+    original_dimensions = {"width": int(width), "height": int(height)}
+    if min(width, height) < 64:
+        return ForensicFinding(
+            code="image.copy_move.unavailable",
+            severity="info",
+            title="Image too small for copy-move feature review",
+            detail="The image has insufficient spatial detail for the bounded feature-matching review. This is not an integrity finding.",
+            evidence=original_dimensions,
+        )
+
+    scale = min(1.0, 1600.0 / max(width, height))
+    if scale < 1.0:
+        working = cv2.resize(grayscale, (round(width * scale), round(height * scale)), interpolation=cv2.INTER_AREA)
+    else:
+        working = grayscale
+    detector = cv2.ORB_create(nfeatures=1_200, fastThreshold=12)
+    keypoints, descriptors = detector.detectAndCompute(working, None)
+    keypoint_count = len(keypoints)
+    base_evidence = {
+        **original_dimensions,
+        "working_scale": round(scale, 4),
+        "working_width": int(working.shape[1]),
+        "working_height": int(working.shape[0]),
+        "keypoint_count": keypoint_count,
+        "feature_detector": "ORB",
+    }
+    if descriptors is None or keypoint_count < 12:
+        return ForensicFinding(
+            code="image.copy_move.limited",
+            severity="info",
+            title="Limited local features for copy-move review",
+            detail="Too few stable local features were available for internal correspondence screening. Smooth, dark, blurred, or highly compressed images can produce this result.",
+            evidence=base_evidence,
+        )
+
+    raw_matches = cv2.BFMatcher(cv2.NORM_HAMMING).knnMatch(descriptors, descriptors, k=min(5, keypoint_count))
+    minimum_separation = max(24.0, min(working.shape) * 0.08)
+    distance_limit = 36
+    candidate_pairs: list[tuple[float, float, float, float, int]] = []
+    seen_pairs: set[tuple[int, int]] = set()
+    for nearby in raw_matches:
+        if not nearby:
+            continue
+        query = nearby[0].queryIdx
+        for match in nearby[1:]:  # First result is the feature matching itself.
+            if match.distance > distance_limit or query == match.trainIdx:
+                continue
+            pair = tuple(sorted((query, match.trainIdx)))
+            if pair in seen_pairs:
+                continue
+            left = keypoints[query].pt
+            right = keypoints[match.trainIdx].pt
+            if float(np.hypot(left[0] - right[0], left[1] - right[1])) < minimum_separation:
+                continue
+            seen_pairs.add(pair)
+            candidate_pairs.append((left[0], left[1], right[0], right[1], int(match.distance)))
+            break
+
+    base_evidence["descriptor_distance_limit"] = distance_limit
+    base_evidence["minimum_spatial_separation_pixels"] = round(minimum_separation, 2)
+    base_evidence["candidate_pair_count"] = len(candidate_pairs)
+    # A small sample makes an investigator's follow-up reproducible without
+    # flooding the report with hundreds of similar keypoint pairs.
+    base_evidence["candidate_pairs"] = [
+        {
+            "first_xy": [round(x1 / scale, 1), round(y1 / scale, 1)],
+            "second_xy": [round(x2 / scale, 1), round(y2 / scale, 1)],
+            "hamming_distance": distance,
+        }
+        for x1, y1, x2, y2, distance in candidate_pairs[:20]
+    ]
+    if len(candidate_pairs) >= 12:
+        return ForensicFinding(
+            code="image.copy_move.candidates",
+            severity="review",
+            title="Repeated local-feature correspondences require visual review",
+            detail="Spatially separated, visually similar feature pairs were found. Repeating textures and scene structure can produce the same result; inspect the listed coordinates and source context before inferring copy-move editing.",
+            evidence=base_evidence,
+        )
+    return ForensicFinding(
+        code="image.copy_move.no_strong_candidates",
+        severity="info",
+        title="No strong copy-move feature cluster identified",
+        detail="The bounded local-feature screen did not find a strong cluster of spatially separated correspondences. It does not rule out manipulation, especially after resizing, blur, recompression, or very small edits.",
+        evidence=base_evidence,
+    )
+
+
 def analyse_image(path: Path) -> ImageAnalysisResult:
     """Analyse image facts, EXIF consistency, and JPEG ELA without mutating input."""
     try:
@@ -195,6 +294,7 @@ def analyse_image(path: Path) -> ImageAnalysisResult:
             color_mode = source.mode
             metadata = _extract_metadata(source)
             findings = _metadata_findings(metadata)
+            findings.append(_copy_move_candidate_finding(source))
             if image_format == "JPEG":
                 ela_png, ela_metrics, ela_finding = _ela(source)
                 findings.append(ela_finding)

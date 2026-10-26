@@ -12,6 +12,7 @@
   const bytes = (v) => !Number.isFinite(v) ? "—" : v < 1024 ? `${v} B` : v < 1048576 ? `${(v / 1024).toFixed(1)} KB` : `${(v / 1048576).toFixed(1)} MB`;
   const hash = (v) => v ? `${v.slice(0, 12)}…${v.slice(-6)}` : "Hash unavailable";
   const label = (v) => String(v ?? "").replaceAll("_", " ");
+  const suggestedReference = () => `CYB-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}-${Math.floor(100 + Math.random() * 900)}`;
 
   async function api(path, options = {}) {
     const response = await fetch(`${API}${path}`, options);
@@ -85,9 +86,9 @@
   }
 
   function modality(kind) {
-    const detail = state.selected; const media = kind === "image" ? "image" : kind === "video" ? "video" : "audio"; const info = { image: ["Image & metadata forensics", "Inspect EXIF, timestamps, JPEG recompression signals, and derived ELA artifacts."], video: ["Video & CCTV integrity", "Review sampled frames, near-duplicate candidates, transition leads, and contact sheets."], audio: ["Audio integrity review", "Inspect WAV waveform, spectral context, silence, energy transitions, and clipping leads."] }[kind]; const items = detail?.evidence.filter((x) => x.media_type === media) || [];
+    const detail = state.selected; const media = kind === "image" ? "image" : kind === "video" ? "video" : "audio"; const info = { image: ["Image & metadata forensics", "Inspect EXIF, timestamps, JPEG recompression signals, bounded copy-move candidates, and derived ELA artifacts."], video: ["Video & CCTV integrity", "Review sampled frames, near-duplicate candidates, transition leads, and contact sheets."], audio: ["Audio integrity review", "Inspect WAV waveform, spectral context, silence, energy transitions, and clipping leads."] }[kind]; const items = detail?.evidence.filter((x) => x.media_type === media) || [];
     const visual = kind === "audio" ? "<div class='px-wave'></div>" : kind === "video" ? "<div class='px-frame-strip'><i class='px-frame'></i><i class='px-frame flag'></i><i class='px-frame'></i><i class='px-frame flag'></i><i class='px-frame'></i></div><i class='px-scanline'></i>" : "<i class='px-scanline'></i>";
-    return `${header("Modality analysis", info[0], info[1])}<section class="px-card px-module-hero"><div><p class="px-eyebrow">${kind.toUpperCase()} MODULE</p><h1 class="px-page-title">${esc(detail?.reference || "Select a case")}</h1><p class="px-page-subtitle">${detail ? "Live source evidence is shown below. Every output is a review signal and is retained separately from the original." : "Select an investigation to load stored module analysis."}</p></div><div class="px-module-meta"><span>Current capability</span><strong>${kind === "image" ? "EXIF · timestamps · JPEG ELA" : kind === "video" ? "sampling · duplicates · transitions" : "WAV waveform · spectrogram · energy"}</strong><span>Original evidence remains read-only</span></div></section><section class="px-grid-2"><article class="px-card"><header class="px-card-header"><div><h2 class="px-card-title">Forensic visual workspace</h2><p class="px-card-sub">Derived visual layer, not source evidence.</p></div></header><div class="px-card-body"><div class="px-visual-canvas ${kind === "image" ? "" : kind}"><div class="px-grid-overlay"></div>${visual}</div></div></article><article class="px-card"><header class="px-card-header"><div><h2 class="px-card-title">Stored source evidence</h2><p class="px-card-sub">Open the full case to inspect all context.</p></div></header><div class="px-card-body">${items.length ? items.map(evidence).join("") : empty("pageview", `No ${media} evidence selected`, "Select a case containing this media type, or safely upload an original file.", "Open cases", "cases")}</div></article></section>`;
+    return `${header("Modality analysis", info[0], info[1])}<section class="px-card px-module-hero"><div><p class="px-eyebrow">${kind.toUpperCase()} MODULE</p><h1 class="px-page-title">${esc(detail?.reference || "Select a case")}</h1><p class="px-page-subtitle">${detail ? "Live source evidence is shown below. Every output is a review signal and is retained separately from the original." : "Select an investigation to load stored module analysis."}</p></div><div class="px-module-meta"><span>Current capability</span><strong>${kind === "image" ? "EXIF · timestamps · JPEG ELA · ORB review" : kind === "video" ? "sampling · duplicates · transitions" : "WAV waveform · spectrogram · energy"}</strong><span>Original evidence remains read-only</span></div></section><section class="px-grid-2"><article class="px-card"><header class="px-card-header"><div><h2 class="px-card-title">Forensic visual workspace</h2><p class="px-card-sub">Derived visual layer, not source evidence.</p></div></header><div class="px-card-body"><div class="px-visual-canvas ${kind === "image" ? "" : kind}"><div class="px-grid-overlay"></div>${visual}</div></div></article><article class="px-card"><header class="px-card-header"><div><h2 class="px-card-title">Stored source evidence</h2><p class="px-card-sub">Open the full case to inspect all context.</p></div></header><div class="px-card-body">${items.length ? items.map(evidence).join("") : empty("pageview", `No ${media} evidence selected`, "Select a case containing this media type, or safely upload an original file.", "Open cases", "cases")}</div></article></section>`;
   }
 
   function auditView() {
@@ -97,7 +98,131 @@
   function reportsView() { const detail = state.selected; if (!detail) return `${header("Evidence reporting", "Integrity dossiers", "Generate structured records with original hashes, findings, custody events, and limitations.")}${selectedEmpty()}`; return `${header("Evidence reporting", "Integrity dossiers", "Dossiers are derived, hashed investigation records — not legal authenticity verdicts.", `<button class="px-button" type="button" data-action="report">${icon("picture_as_pdf")}Generate set</button>`)}<section class="px-grid-2">${reportsCard(detail)}<article class="px-card"><header class="px-card-header"><div><h2 class="px-card-title">Fixed report contents</h2><p class="px-card-sub">Evidence-linked output for human review.</p></div></header><div class="px-card-body"><ol class="px-audit-list"><li><strong>Original evidence hashes</strong><span>SHA-256 values and intake records</span></li><li><strong>Methods & findings</strong><span>Module versions, signals, and derived artifacts</span></li><li><strong>Custody event history</strong><span>Actors and timestamps for case operations</span></li><li><strong>Limitations statement</strong><span>Human-review boundary included in every output</span></li></ol></div></article></section>`; }
   function notesView() { const detail = state.selected; if (!detail) return `${header("Human decision layer", "Analyst notes & decisions", "Record context, follow-up, and disposition separately from automated signals.")}${selectedEmpty()}`; return `${header("Human decision layer", "Analyst notes & decisions", "Analyst judgment is auditable and remains visible in the custody history.")}<section class="px-grid-case"><article class="px-card"><header class="px-card-header"><div><h2 class="px-card-title">Record analyst decision</h2><p class="px-card-sub">Saving this note adds an audit event to the case.</p></div></header><form id="noteForm" class="px-card-body"><label class="px-form-label">Analyst note<textarea class="px-textarea" name="note" required placeholder="Explain the source context, limitation, required follow-up, or human decision…"></textarea></label><label class="px-form-label" style="margin-top:14px">Disposition<select class="px-select" name="disposition" style="width:100%"><option value="">No disposition selected</option><option>Continue investigation</option><option>Escalate for forensic examination</option><option>No further automated action</option><option>Request original source file</option></select></label><div class="px-modal-actions" style="padding:18px 0 0;border:0"><button class="px-button" type="submit">${icon("save")}Record note and decision</button></div></form></article><article class="px-card"><header class="px-card-header"><div><h2 class="px-card-title">Recorded analyst context</h2><p class="px-card-sub">${detail.notes.length} note${detail.notes.length === 1 ? "" : "s"} stored</p></div></header><div class="px-card-body"><div class="px-note-list">${detail.notes.length ? detail.notes.map((n) => `<article class="px-note"><strong>${esc(n.disposition || "Analyst note")}</strong><span>${esc(n.note)}</span><small>${esc(n.author)} · ${date(n.created_at)}</small></article>`).join("") : "<p class='px-card-sub'>No notes recorded for this case.</p>"}</div></div></article></section>`; }
   function settings() { const h = state.health || { status: "checking" }; const v = state.version || { api_version: "—", forensic_engine_version: "—" }; return `${header("System configuration", "Settings & security", "Local hackathon environment and current evidence-handling safeguards.")}<section class="px-settings-grid"><article class="px-card"><header class="px-card-header"><div><h2 class="px-card-title">Runtime status</h2><p class="px-card-sub">Connectivity and local service profile.</p></div>${chip(h.status === "ok" ? "API healthy" : "Checking API", h.status === "ok" ? "good" : "active")}</header><div class="px-card-body"><div class="px-kv"><div><strong>API version</strong><span>Current FastAPI contract</span></div><code>${esc(v.api_version)}</code></div><div class="px-kv"><div><strong>Forensic engine</strong><span>Bounded local analysis modules</span></div><code>${esc(v.forensic_engine_version)}</code></div><div class="px-kv"><div><strong>Storage mode</strong><span>Local original evidence vault</span></div><code>SQLite WAL + filesystem</code></div></div></article><article class="px-card"><header class="px-card-header"><div><h2 class="px-card-title">MVP safeguards</h2><p class="px-card-sub">Clear operational boundaries.</p></div></header><div class="px-card-body"><div class="px-kv"><div><strong>Original evidence</strong><span>Read-only after complete intake write</span></div>${chip("Protected", "good")}</div><div class="px-kv"><div><strong>Custody audit</strong><span>Hash-chain verification per case</span></div>${chip("On demand", "active")}</div><div class="px-kv"><div><strong>Authentication</strong><span>Demo analyst header is not production RBAC</span></div>${chip("Hardening required", "review")}</div><div class="px-kv"><div><strong>Media processing</strong><span>Runs synchronously in the local MVP</span></div>${chip("Worker queue planned", "review")}</div></div></article></section>`; }
-  function modal() { if (state.modal !== "intake") return ""; return `<div class="px-modal" role="dialog" aria-modal="true" aria-labelledby="intake-title"><section class="px-modal-panel"><header class="px-modal-head"><div><p class="px-eyebrow">New forensic analysis</p><h2 id="intake-title">Create a secure evidence record</h2><p>File signature and SHA-256 are recorded before analysis starts.</p></div><button type="button" class="px-close" data-action="close">${icon("close")}</button></header><div class="px-steps"><span class="px-step active"><b>1</b>Case details</span><span class="px-step active"><b>2</b>Original evidence</span><span class="px-step"><b>3</b>Preservation</span><span class="px-step"><b>4</b>Module review</span></div><form id="intakeForm"><div class="px-modal-body"><div class="px-form-grid"><label class="px-form-label">Case reference<input class="px-input" name="reference" value="CYB-2026-NEW" required pattern="[A-Za-z0-9_-]{3,64}"/></label><label class="px-form-label">Case title<input class="px-input" name="title" value="Digital evidence intake" required/></label></div><label class="px-upload" for="intakeFile">${icon("upload_file")}<strong>Choose original evidence</strong><span>JPEG, PNG, WAV, MP3, MP4, AVI, or MKV · original stored separately from derived artifacts</span><input id="intakeFile" name="file" type="file" accept="image/*,audio/*,video/*" required hidden/></label><p class="px-card-sub" id="fileHint" style="margin:12px 0 0">No file selected.</p></div><footer class="px-modal-actions"><button type="button" class="px-outline-button" data-action="close">Cancel</button><button class="px-button" type="submit">${icon("lock")}Preserve & analyse</button></footer></form></section></div>`; }
+  function modal() { if (state.modal !== "intake") return ""; return `<div class="px-modal" role="dialog" aria-modal="true" aria-labelledby="intake-title"><section class="px-modal-panel"><header class="px-modal-head"><div><p class="px-eyebrow">New forensic analysis</p><h2 id="intake-title">Create a secure evidence record</h2><p>File signature and SHA-256 are recorded before analysis starts.</p></div><button type="button" class="px-close" data-action="close">${icon("close")}</button></header><div class="px-steps"><span class="px-step active"><b>1</b>Case details</span><span class="px-step active"><b>2</b>Original evidence</span><span class="px-step"><b>3</b>Preservation</span><span class="px-step"><b>4</b>Module review</span></div><form id="intakeForm"><div class="px-modal-body"><div class="px-form-grid"><label class="px-form-label">Case reference<input class="px-input" name="reference" value="${suggestedReference()}" required pattern="[A-Za-z0-9_-]{3,64}"/></label><label class="px-form-label">Case title<input class="px-input" name="title" value="Digital evidence intake" required/></label></div><label class="px-upload" for="intakeFile">${icon("upload_file")}<strong>Choose original evidence</strong><span>JPEG, PNG, WAV, MP3, MP4, AVI, or MKV · original stored separately from derived artifacts</span><input id="intakeFile" name="file" type="file" accept="image/*,audio/*,video/*" required hidden/></label><p class="px-card-sub" id="fileHint" style="margin:12px 0 0">WAV supports local audio analysis. Other supported originals are safely preserved; an approved decoder is needed before local audio review.</p></div><footer class="px-modal-actions"><button type="button" class="px-outline-button" data-action="close">Cancel</button><button class="px-button" type="submit">${icon("lock")}Preserve & analyse</button></footer></form></section></div>`; }
+
+  function currentView() {
+    const views = { overview, cases, case: caseView, image: () => modality("image"), video: () => modality("video"), audio: () => modality("audio"), audit: auditView, reports: reportsView, notes: notesView, settings };
+    return (views[state.view] || overview)();
+  }
+  function render() {
+    root.innerHTML = shell(state.loading ? `<section class="px-card px-empty">${icon("sync")}<h3>Loading secure workspace</h3><p>Retrieving case registry and integrity records.</p></section>` : currentView());
+  }
+  async function refresh({ preserveView = true } = {}) {
+    state.loading = true; render();
+    const selectedId = state.selected?.id;
+    const [dashboard, cases, health, version] = await Promise.all([
+      api("/dashboard"), api("/cases"), api("/health"), api("/version"),
+    ]);
+    state.dashboard = dashboard; state.cases = cases; state.health = health; state.version = version;
+    if (selectedId) state.selected = await api(`/cases/${encodeURIComponent(selectedId)}`).catch(() => null);
+    if (!state.selected && cases.length) state.selected = await api(`/cases/${encodeURIComponent(cases[0].id)}`).catch(() => null);
+    state.loading = false;
+    if (!preserveView) state.view = "overview";
+    render();
+  }
+  async function openCase(id) {
+    state.selected = await api(`/cases/${encodeURIComponent(id)}`);
+    state.view = "case"; state.modal = null; render();
+  }
+  function selectedOrThrow() {
+    if (!state.selected) throw new Error("Select a case before running this operation.");
+    return state.selected;
+  }
+  async function runAnalysis(evidenceId, media) {
+    const result = await api(`/cases/evidence/${encodeURIComponent(evidenceId)}/analysis/${encodeURIComponent(media)}`, { method: "POST", headers: { "X-Analyst-ID": "demo-analyst" } });
+    toast(`${label(media)} analysis completed: ${result.findings?.length || 0} signal(s) recorded.`);
+    await refresh();
+  }
+  async function dispatchAction(action, node) {
+    if (action === "menu") { document.querySelector(".px-sidebar")?.classList.toggle("open"); return; }
+    if (action === "intake") { state.modal = "intake"; render(); return; }
+    if (action === "close") { state.modal = null; render(); return; }
+    if (action === "refresh") { await refresh(); toast("Workspace refreshed."); return; }
+    if (action === "run-analysis") { await runAnalysis(node.dataset.id, node.dataset.media); return; }
+    const detail = selectedOrThrow();
+    if (action === "verify-evidence") {
+      const result = await api(`/cases/evidence/${encodeURIComponent(node.dataset.id)}/verify-integrity`, { method: "POST", headers: { "X-Analyst-ID": "demo-analyst" } });
+      toast(result.matches ? "Original SHA-256 matches the intake record." : "Integrity mismatch recorded — preserve and escalate.", !result.matches);
+      await refresh(); return;
+    }
+    if (action === "verify-audit") {
+      const result = await api(`/cases/${encodeURIComponent(detail.id)}/verify-audit-chain`);
+      toast(result.chain_intact ? "Custody audit chain verified." : "Custody audit chain mismatch detected.", !result.chain_intact);
+      return;
+    }
+    if (action === "assessment") {
+      await api(`/cases/${encodeURIComponent(detail.id)}/assessment`, { method: "POST", headers: { "X-Analyst-ID": "demo-analyst" } });
+      toast("Review recommendation updated. Human context remains required."); await refresh(); return;
+    }
+    if (action === "report") {
+      const reports = await api(`/cases/${encodeURIComponent(detail.id)}/reports`, { method: "POST", headers: { "X-Analyst-ID": "demo-analyst" } });
+      toast(`${reports.length} integrity dossier(s) generated and hashed.`); await refresh(); return;
+    }
+  }
+
+  document.addEventListener("click", async (event) => {
+    const caseButton = event.target.closest("[data-case]");
+    const navButton = event.target.closest("[data-nav]");
+    const actionButton = event.target.closest("[data-action]");
+    try {
+      if (caseButton) { await openCase(caseButton.dataset.case); return; }
+      if (navButton) {
+        const next = navButton.dataset.nav;
+        if (next === "intake") { state.modal = "intake"; render(); return; }
+        state.view = next; state.modal = null; render(); return;
+      }
+      if (actionButton) await dispatchAction(actionButton.dataset.action, actionButton);
+    } catch (error) { toast(error.message || "Operation failed safely.", true); }
+  });
+  document.addEventListener("input", (event) => {
+    if (event.target.id === "globalSearch" || event.target.id === "caseSearch") {
+      state.filter = event.target.value; if (state.view === "cases") render();
+    }
+  });
+  document.addEventListener("change", (event) => {
+    if (event.target.id !== "intakeFile") return;
+    const file = event.target.files?.[0];
+    const hint = document.getElementById("fileHint");
+    if (hint) hint.textContent = file ? `${file.name} · ${bytes(file.size)} · original source will be preserved before analysis.` : "No file selected.";
+  });
+  document.addEventListener("submit", async (event) => {
+    if (event.target.id === "intakeForm") {
+      event.preventDefault();
+      const form = new FormData(event.target);
+      const reference = String(form.get("reference") || "").trim();
+      const title = String(form.get("title") || "").trim();
+      const file = form.get("file");
+      if (!(file instanceof File) || !file.size) { toast("Choose an original evidence file first.", true); return; }
+      try {
+        const created = await api("/cases", { method: "POST", headers: { "Content-Type": "application/json", "X-Analyst-ID": "demo-analyst" }, body: JSON.stringify({ reference, title }) });
+        const source = new FormData(); source.append("file", file, file.name);
+        const evidence = await api(`/cases/${encodeURIComponent(created.id)}/evidence`, { method: "POST", headers: { "X-Analyst-ID": "demo-analyst" }, body: source });
+        state.selected = await api(`/cases/${encodeURIComponent(created.id)}`);
+        state.view = "case"; state.modal = null; render();
+        toast("Original preserved and SHA-256 recorded. Starting bounded analysis…");
+        try { await runAnalysis(evidence.id, evidence.media_type); } catch (analysisError) { toast(`Original is preserved. ${analysisError.message}`, true); await refresh(); }
+      } catch (error) { toast(error.message || "Secure intake could not be completed.", true); }
+      return;
+    }
+    if (event.target.id === "noteForm") {
+      event.preventDefault();
+      try {
+        const detail = selectedOrThrow(); const form = new FormData(event.target);
+        await api(`/cases/${encodeURIComponent(detail.id)}/notes`, { method: "POST", headers: { "Content-Type": "application/json", "X-Analyst-ID": "demo-analyst" }, body: JSON.stringify({ note: String(form.get("note") || ""), disposition: String(form.get("disposition") || "") || null }) });
+        toast("Analyst note and audit event recorded."); await refresh();
+      } catch (error) { toast(error.message || "Note could not be recorded.", true); }
+    }
+  });
+  document.addEventListener("keydown", (event) => {
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") { event.preventDefault(); document.getElementById("globalSearch")?.focus(); }
+    if (event.key === "Escape" && state.modal) { state.modal = null; render(); }
+  });
+
+  refresh().catch((error) => {
+    state.loading = false;
+    root.innerHTML = shell(`<section class="px-card px-empty">${icon("error")}<h3>Workspace unavailable</h3><p>${esc(error.message || "The API could not be reached.")}</p><button class="px-button" data-action="refresh">Retry connection</button></section>`);
+  });
+})();
 
 
 

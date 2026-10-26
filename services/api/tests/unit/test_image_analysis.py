@@ -32,6 +32,7 @@ def test_jpeg_analysis_returns_explainable_metadata_and_ela(tmp_path) -> None:
     assert "metadata.timestamp.conflict" in codes
     assert "metadata.software.present" in codes
     assert "image.ela.generated" in codes
+    assert any(code.startswith("image.copy_move.") for code in codes)
 
 
 def test_png_analysis_never_claims_ela_support(tmp_path) -> None:
@@ -42,3 +43,4 @@ def test_png_analysis_never_claims_ela_support(tmp_path) -> None:
 
     assert result.ela_png is None
     assert "image.ela.not_applicable" in {finding.code for finding in result.findings}
+    assert any(finding.code.startswith("image.copy_move.") for finding in result.findings)
