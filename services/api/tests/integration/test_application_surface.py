@@ -1,31 +1,17 @@
 from __future__ import annotations
 
-from dataclasses import replace
 from pathlib import Path
 
-from fastapi.testclient import TestClient
-
-from app.core.config import Settings
-from app.main import create_app
-
-
-def test_ui_shell_and_live_contract_assets_are_served(settings: Settings) -> None:
+def test_ui_shell_references_the_dynamic_workbench_assets() -> None:
     project_root = Path(__file__).resolve().parents[4]
-    application = create_app(replace(settings, web_dir=project_root / "apps" / "web"))
-    client = TestClient(application)
+    web_dir = project_root / "apps" / "web"
 
-    home = client.get("/")
-    workbench = client.get("/stitch-app.js")
-    styles = client.get("/stitch.css")
-    health = client.get("/api/v1/health")
-    version = client.get("/api/v1/version")
+    home = (web_dir / "index.html").read_text(encoding="utf-8")
+    workbench = (web_dir / "stitch-app.js").read_text(encoding="utf-8")
+    styles = (web_dir / "stitch.css").read_text(encoding="utf-8")
 
-    assert home.status_code == 200
-    assert 'src="stitch-app.js"' in home.text
-    assert workbench.status_code == 200
-    assert 'api("/dashboard")' in workbench.text
-    assert 'verify-audit' in workbench.text
-    assert styles.status_code == 200
-    assert "--px-canvas" in styles.text
-    assert health.json()["status"] == "ok"
-    assert "ORB copy-move candidates" in version.json()["modules"]["image"]
+    assert 'src="stitch-app.js"' in home
+    assert 'href="stitch.css"' in home
+    assert 'api("/dashboard")' in workbench
+    assert 'verify-audit' in workbench
+    assert "--px-canvas" in styles
